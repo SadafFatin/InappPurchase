@@ -7,8 +7,9 @@ android {
         applicationId "com.testservice.inapppurchasedemo"
         minSdkVersion 22
         targetSdkVersion 29
-        versionCode 2
+        versionCode 3
         versionName "1.0"
+
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {

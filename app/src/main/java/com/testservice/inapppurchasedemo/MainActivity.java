@@ -28,12 +28,13 @@ import com.testservice.inapppurchasedemo.ui.main.SectionsPagerAdapter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements PurchasesUpdatedListener, BillingClientStateListener, SkuDetailsResponseListener {
+public class MainActivity extends AppCompatActivity implements
+        PurchasesUpdatedListener, BillingClientStateListener,
+        SkuDetailsResponseListener {
 
     private static final String TAG = "InAppBilling";
     static final String ITEM_SKU_ADREMOVAL = "streakr.ad_removal";
 
-    private Button mBuyButton;
     private String mAdRemovalPrice;
     private SharedPreferences mSharedPreferences;
 
@@ -59,49 +60,40 @@ public class MainActivity extends AppCompatActivity implements PurchasesUpdatedL
             }
         });
 
-
-
         skuList.add(ITEM_SKU_ADREMOVAL);
-        mBillingClient = BillingClient.newBuilder(MainActivity.this).setListener(this).build();
-        params.setSkusList(skuList).setType(BillingClient.SkuType.SUBS);
+
+        /*
+        The unique product IDs you created when configuring your in-app products are used to asynchronously query Google
+        Play for in-app product details.
+        */
+
+        params.setSkusList(skuList).setType(BillingClient.SkuType.INAPP);
+
+        /*
+        billing Cilent
+        Before you can make Google Play Billing requests, you must first establish a connection to Google Play
+        by doing the following
+        */
+
+        mBillingClient = BillingClient.newBuilder(this).setListener(this).build();
         mBillingClient.startConnection(this);
-        mBillingClient.querySkuDetailsAsync(params.build(), this);
 
 
-    }
-
-
-    @Override
-    public void onPurchasesUpdated(int responseCode, @Nullable List<com.android.billingclient.api.Purchase> purchases) {
-
-        if (responseCode == BillingClient.BillingResponse.OK
-                && purchases != null) {
-            for (Purchase purchase : purchases) {
-                handlePurchase(purchase);
-            }
-        } else if (responseCode == BillingClient.BillingResponse.USER_CANCELED) {
-            // Handle an error caused by a user cancelling the purchase flow.
-            Log.d(TAG, "User Canceled" + responseCode);
-        } else if (responseCode == BillingClient.BillingResponse.ITEM_ALREADY_OWNED) {
-
-        } else {
-            Log.d(TAG, "Other code" + responseCode);
-            // Handle any other error codes.
-        }
-
-    }
-
-
-
-    public void showToast(String message){
-        Toast.makeText(MainActivity.this,message,Toast.LENGTH_SHORT).show();
     }
 
 
     @Override
     public void onBillingSetupFinished(@BillingClient.BillingResponse int billingResponseCode) {
         if (billingResponseCode == BillingClient.BillingResponse.OK) {
-            // The billing client is ready. You can query purchases here.
+            showLog("The billing client is ready. You can query purchases here.");
+            showToast("The billing client is ready");
+            /*
+            To query Google Play for in-app product details, call querySkuDetailsAsync().
+            When calling this method, pass an instance of SkuDetailsParams that specifies a list of product ID
+            strings and a SkuType. The SkuType can be either SkuType.INAPP for one-time products or
+            rewarded products or SkuType.SUBS for subscriptions.
+            */
+            mBillingClient.querySkuDetailsAsync(params.build(), this);
         }
     }
 
@@ -110,19 +102,42 @@ public class MainActivity extends AppCompatActivity implements PurchasesUpdatedL
         //TODO implement your own retry policy
         // Try to restart the connection on the next request to
         // Google Play by calling the startConnection() method.
+        showLog(" The billing client is disconnected. Try restarting ");
+        showToast("The billing client is disconnected.");
+    }
+
+
+    @Override
+    public void onPurchasesUpdated(int responseCode, @Nullable List<com.android.billingclient.api.Purchase> purchases) {
+        if (responseCode == BillingClient.BillingResponse.OK
+                && purchases != null) {
+            Log.d(TAG, " User Selected to puchased " + responseCode);
+            for (Purchase purchase : purchases) {
+                handlePurchase(purchase);
+            }
+        } else if (responseCode == BillingClient.BillingResponse.USER_CANCELED) {
+            // Handle an error caused by a user cancelling the purchase flow.
+            Log.d(TAG, " User Canceled " + responseCode);
+        } else if (responseCode == BillingClient.BillingResponse.ITEM_ALREADY_OWNED) {
+            Log.d(TAG, " User Already Owened the product " + responseCode);
+        } else {
+            Log.d(TAG, " Other code " + responseCode);
+            // Handle any other error codes.
+        }
+
     }
 
 
     @Override
     public void onSkuDetailsResponse(int responseCode, List skuDetailsList) {
         // Process the result.
-
         if (responseCode == BillingClient.BillingResponse.OK
                 && skuDetailsList != null) {
             for (Object skuDetailsObject : skuDetailsList) {
                 SkuDetails skuDetails = (SkuDetails) skuDetailsObject;
                 String sku = skuDetails.getSku();
                 String price = skuDetails.getPrice();
+                showLog(" Sku "+ sku);
                 if (ITEM_SKU_ADREMOVAL.equals(sku)) {
                     mAdRemovalPrice = price;
                 }
@@ -130,27 +145,33 @@ public class MainActivity extends AppCompatActivity implements PurchasesUpdatedL
         }
     }
 
+
+    // custom methods //
     public void testBilling(View view) {
 
-            BillingFlowParams flowParams = BillingFlowParams.newBuilder()
-                    .setSku(ITEM_SKU_ADREMOVAL)
-                    .setType(BillingClient.SkuType.INAPP)
-                    .build();
-            int responseCode = mBillingClient.launchBillingFlow(MainActivity.this, flowParams);
+        BillingFlowParams flowParams = BillingFlowParams.newBuilder()
+                .setSku(ITEM_SKU_ADREMOVAL)
+                .setType(BillingClient.SkuType.INAPP)
+                .build();
+        int responseCode = mBillingClient.launchBillingFlow(MainActivity.this, flowParams);
     }
 
 
     private void handlePurchase(Purchase purchase) {
         if (purchase.getSku().equals(ITEM_SKU_ADREMOVAL)) {
-            /*mSharedPreferences.edit().putBoolean(getResources().getString(R.string.pref_remove_ads_key), true).commit();
-            setAdFree(true);
-            mBuyButton.setText(getResources().getString(R.string.pref_ad_removal_purchased));
-            mBuyButton.setEnabled(false);*/
+            showToast(" You have Puchased Add removal ");
+            showToast(" You have Puchased Add removal "+purchase.getSku());
         }
     }
 
 
+    public void showToast(String message) {
+        Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+    }
 
+    public void showLog(String msg) {
+        Log.d(TAG, msg);
+    }
 
 
 }

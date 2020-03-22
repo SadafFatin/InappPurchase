@@ -19,6 +19,9 @@ import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.SkuDetails;
 import com.android.billingclient.api.SkuDetailsParams;
 import com.android.billingclient.api.SkuDetailsResponseListener;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdSize;
+import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
@@ -33,15 +36,29 @@ public class MainActivity extends AppCompatActivity implements
         SkuDetailsResponseListener {
 
     private static final String TAG = "InAppBilling";
-    static final String ITEM_SKU_ADREMOVAL = "streakr.ad_removal";
 
-    private String mAdRemovalPrice;
-    private SharedPreferences mSharedPreferences;
+    static final String ITEM_SKU_ADREMOVAL_1 = "streakr.ad_removal_10";
+    static final String ITEM_SKU_ADREMOVAL_2 = "streakr.ad_removal_20";
+    static final String ITEM_SKU_ADREMOVAL_3 = "streakr.ad_removal_30";
+    static final String ITEM_SKU_ADREMOVAL_4 = "streakr.ad_removal_40";
+    static final String ITEM_SKU_ADREMOVAL_5 = "streakr.ad_removal_50";
+
+    static final String AD_REMOVED = "ad_removed";
+
 
     private BillingClient mBillingClient;
 
     List skuList = new ArrayList<>();
+
     SkuDetailsParams.Builder params = SkuDetailsParams.newBuilder();
+
+    private AdView mAdView;
+    SharedPreferences pref;
+    SharedPreferences.Editor editor;
+    boolean adRemoved;
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,14 +71,29 @@ public class MainActivity extends AppCompatActivity implements
         tabs.setupWithViewPager(viewPager);
 
 
-        MobileAds.initialize(this, new OnInitializationCompleteListener() {
-            @Override
-            public void onInitializationComplete(InitializationStatus initializationStatus) {
-            }
-        });
 
-        skuList.add(ITEM_SKU_ADREMOVAL);
+        pref = getApplicationContext().getSharedPreferences("MyPref", 0); // 0 - for private mode
+        editor = pref.edit();
+        adRemoved = pref.getBoolean(AD_REMOVED,false);
+        if(adRemoved){
+        }
+        else {
+            MobileAds.initialize(this, new OnInitializationCompleteListener() {
+                @Override
+                public void onInitializationComplete(InitializationStatus initializationStatus) {
+                }
+            });
 
+            mAdView = findViewById(R.id.adView);
+            AdRequest adRequest = new AdRequest.Builder().build();
+            mAdView.loadAd(adRequest);
+        }
+
+        skuList.add(ITEM_SKU_ADREMOVAL_1);
+        skuList.add(ITEM_SKU_ADREMOVAL_2);
+        skuList.add(ITEM_SKU_ADREMOVAL_3);
+        skuList.add(ITEM_SKU_ADREMOVAL_4);
+        skuList.add(ITEM_SKU_ADREMOVAL_5);
         /*
         The unique product IDs you created when configuring your in-app products are used to asynchronously query Google
         Play for in-app product details.
@@ -77,8 +109,6 @@ public class MainActivity extends AppCompatActivity implements
 
         mBillingClient = BillingClient.newBuilder(this).setListener(this).build();
         mBillingClient.startConnection(this);
-
-
     }
 
 
@@ -94,6 +124,7 @@ public class MainActivity extends AppCompatActivity implements
             rewarded products or SkuType.SUBS for subscriptions.
             */
             mBillingClient.querySkuDetailsAsync(params.build(), this);
+
         }
     }
 
@@ -137,10 +168,8 @@ public class MainActivity extends AppCompatActivity implements
                 SkuDetails skuDetails = (SkuDetails) skuDetailsObject;
                 String sku = skuDetails.getSku();
                 String price = skuDetails.getPrice();
-                showLog(" Sku "+ sku);
-                if (ITEM_SKU_ADREMOVAL.equals(sku)) {
-                    mAdRemovalPrice = price;
-                }
+                showLog(" Sku " + sku);
+
             }
         }
     }
@@ -148,9 +177,12 @@ public class MainActivity extends AppCompatActivity implements
 
     // custom methods //
     public void testBilling(View view) {
-
         BillingFlowParams flowParams = BillingFlowParams.newBuilder()
-                .setSku(ITEM_SKU_ADREMOVAL)
+                .setSku(ITEM_SKU_ADREMOVAL_1)
+                .setSku(ITEM_SKU_ADREMOVAL_2)
+                .setSku(ITEM_SKU_ADREMOVAL_3)
+                .setSku(ITEM_SKU_ADREMOVAL_4)
+                .setSku(ITEM_SKU_ADREMOVAL_5)
                 .setType(BillingClient.SkuType.INAPP)
                 .build();
         int responseCode = mBillingClient.launchBillingFlow(MainActivity.this, flowParams);
@@ -158,9 +190,10 @@ public class MainActivity extends AppCompatActivity implements
 
 
     private void handlePurchase(Purchase purchase) {
-        if (purchase.getSku().equals(ITEM_SKU_ADREMOVAL)) {
-            showToast(" You have Puchased Add removal ");
-            showToast(" You have Puchased Add removal "+purchase.getSku());
+        if (purchase.getSku().equals(ITEM_SKU_ADREMOVAL_1)) {
+            showToast(" You have Puchased Add removal "+ITEM_SKU_ADREMOVAL_1);
+            showLog(" You have Puchased Add removal " + purchase.getSku());
+            removeAdds();
         }
     }
 
@@ -173,5 +206,12 @@ public class MainActivity extends AppCompatActivity implements
         Log.d(TAG, msg);
     }
 
+
+    public void removeAdds(){
+      editor.putBoolean(AD_REMOVED,true);
+      editor.commit();
+      adRemoved = true;
+      mAdView.setVisibility(View.GONE);
+    }
 
 }

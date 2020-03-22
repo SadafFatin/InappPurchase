@@ -58,9 +58,7 @@ public class PlaceholderFragment extends Fragment {
             }
         });
 
-        AdView mAdView = root.findViewById(R.id.adView);
-        AdRequest adRequest = new AdRequest.Builder().build();
-        mAdView.loadAd(adRequest);
+
 
 
 
